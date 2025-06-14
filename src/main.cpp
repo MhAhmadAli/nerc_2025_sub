@@ -5,15 +5,37 @@
 void receiveEvent(int howMany)
 {
     String data = "";
-    while (Wire.available()) // loop through all but the last
+    while (Wire.available() > 0) // loop through all but the last
     {
-        char c = Wire.read(); // receive byte as a character
-        Serial.print(c);      // print the character
-        data += String(c);
+        char chr = Wire.read(); // receive byte as a character
+        data += String(chr);
     }
-    int x = Wire.read(); // receive byte as an integer
-    data += String(x);
-    Serial.println(data);   // print the integer
+
+    Serial.println(data);
+
+    if (data.indexOf("FT") > -1)
+    {
+        int angle = data.substring(data.indexOf(" ")).toInt();
+        // queue.push({servo : &frontServo, pos : angle});
+        moveServo(&frontServo, angle);
+    }
+    else if (data.indexOf("LT") > -1)
+    {
+        int angle = data.substring(data.indexOf(" ")).toInt();
+        // queue.push({servo : &leftServo, pos : angle});
+        moveServo(&leftServo, angle);
+    }
+    else if (data.indexOf("RT") > -1)
+    {
+        int angle = data.substring(data.indexOf(" ")).toInt();
+        moveServo(&rightServo, angle);
+    }
+    else if (data.indexOf("BS") > -1) 
+    {
+        Serial.println("Moving base servo!");
+        int angle = data.substring(data.indexOf(" ")).toInt();
+        moveServo(&baseServo, angle);
+    }
 }
 
 void setup()
@@ -21,14 +43,10 @@ void setup()
     Wire.begin(4); // join i2c bus with address #4
     Wire.onReceive(receiveEvent);
     Serial.begin(9600);
-    // mainBoard.begin(2400);
+
     initServos();
 }
 
 void loop()
 {
-    // if (mainBoard.available())
-    // {
-    //     String data = mainBoard.readStringUntil('\n');
-    // }
 }

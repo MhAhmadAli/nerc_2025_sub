@@ -15,25 +15,27 @@ public:
     ServoMotor(uint8_t _pin)
     {
         pin = _pin;
-        lastPos = 0;
+        lastPos = 90;
     }
 
-    void init()
+    void init(int pos = -1)
     {
         this->attach(pin);
-        this->write(lastPos);
+        this->write(pos != -1 ? pos : lastPos);
     }
 };
 
 ServoMotor frontServo(5);
 ServoMotor leftServo(4);
 ServoMotor rightServo(2);
+ServoMotor baseServo(3);
 
 void initServos()
 {
     frontServo.init();
     leftServo.init();
     rightServo.init();
+    baseServo.init(10);
 }
 
 void moveServo(ServoMotor *servoMotor, int pos)
