@@ -1,6 +1,15 @@
 #include <Arduino.h>
+#include <CircularBuffer.hpp>
 #include <Wire.h>
 #include "ServoControl.h"
+
+typedef struct
+{
+    char servo;
+    int pos;
+} Cmd;
+
+CircularBuffer<Cmd, 10> queue;
 
 void receiveEvent(int howMany)
 {
@@ -13,28 +22,33 @@ void receiveEvent(int howMany)
 
     Serial.println(data);
 
+    // f -> frontServo
+    // l -> leftServo
+    // r -> rightServo
+    // b -> baseServo
     if (data.indexOf("FT") > -1)
     {
         int angle = data.substring(data.indexOf(" ")).toInt();
-        // queue.push({servo : &frontServo, pos : angle});
-        moveServo(&frontServo, angle);
+        queue.push({servo : 'f', pos : angle});
+        // moveServo(&frontServo, angle);
     }
     else if (data.indexOf("LT") > -1)
     {
         int angle = data.substring(data.indexOf(" ")).toInt();
-        // queue.push({servo : &leftServo, pos : angle});
-        moveServo(&leftServo, angle);
+        queue.push({servo : 'l', pos : angle});
+        // moveServo(&leftServo, angle);
     }
     else if (data.indexOf("RT") > -1)
     {
         int angle = data.substring(data.indexOf(" ")).toInt();
-        moveServo(&rightServo, angle);
+        queue.push({servo : 'r', pos : angle});
+        // moveServo(&rightServo, angle);
     }
-    else if (data.indexOf("BS") > -1) 
+    else if (data.indexOf("BS") > -1)
     {
-        Serial.println("Moving base servo!");
         int angle = data.substring(data.indexOf(" ")).toInt();
-        moveServo(&baseServo, angle);
+        queue.push({servo : 'b', pos : angle});
+        // moveServo(&baseServo, angle);
     }
 }
 
@@ -49,4 +63,18 @@ void setup()
 
 void loop()
 {
+    while (!queue.isEmpty())
+    {
+        Cmd cmd = queue.pop();
+
+        if (cmd.servo == 'f') {
+            moveServo(&frontServo, cmd.pos);
+        } else if (cmd.servo == 'l') {
+            moveServo(&leftServo, cmd.pos);
+        } else if (cmd.servo == 'r') {
+            moveServo(&rightServo, cmd.pos);
+        } else if (cmd.servo == 'b') {
+            moveServo(&baseServo, cmd.pos);
+        }
+    }
 }

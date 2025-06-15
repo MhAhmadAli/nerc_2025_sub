@@ -40,12 +40,13 @@ void initServos()
 
 void moveServo(ServoMotor *servoMotor, int pos)
 {
+    noInterrupts();
     if (servoMotor->lastPos > pos)
     {
         for (int i = servoMotor->lastPos; i > pos; i--)
         {
             servoMotor->write(i);
-            delay(10);
+            delay(30);
         }
     }
     else
@@ -53,10 +54,11 @@ void moveServo(ServoMotor *servoMotor, int pos)
         for (int i = servoMotor->lastPos; i < pos; i++)
         {
             servoMotor->write(i);
-            delay(10);
+            delay(30);
         }
     }
     servoMotor->lastPos = pos;
+    interrupts();
 }
 
 #endif //_SERVOCONTROL_H_
