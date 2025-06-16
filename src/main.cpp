@@ -2,11 +2,17 @@
 #include <CircularBuffer.hpp>
 #include <Wire.h>
 #include "ServoControl.h"
+#include "ColorSensors.h"
+
+bool shouldDropRed = true;
 
 typedef struct
 {
-    char servo;
+    PickupServoEnum servo;
     int pos;
+    FlapServoEnum flap;
+    FlapState flapState;
+    DirectionEnum direction;
 } Cmd;
 
 CircularBuffer<Cmd, 10> queue;
@@ -22,33 +28,125 @@ void receiveEvent(int howMany)
 
     Serial.println(data);
 
-    // f -> frontServo
-    // l -> leftServo
-    // r -> rightServo
-    // b -> baseServo
-    if (data.indexOf("FT") > -1)
+    if (data.indexOf("DR") > -1)
+    {
+        if (data.substring(data.indexOf(" ")).indexOf("FT") > -1)
+        {
+            queue.push({
+                servo : PickupServoEnum::SERVO_NONE,
+                pos : 0,
+                flap : FlapServoEnum::FLAP_NONE,
+                flapState : FlapState::FLAP_OPEN,
+                direction : DirectionEnum::FORWARD
+            });
+        }
+        else if (data.substring(data.indexOf(" ")).indexOf("LT") > -1)
+        {
+            queue.push({
+                servo : PickupServoEnum::SERVO_NONE,
+                pos : 0,
+                flap : FlapServoEnum::FLAP_NONE,
+                flapState : FlapState::FLAP_OPEN,
+                direction : DirectionEnum::LEFT
+            });
+        }
+        else if (data.substring(data.indexOf(" ")).indexOf("RT") > -1)
+        {
+            queue.push({
+                servo : PickupServoEnum::SERVO_NONE,
+                pos : 0,
+                flap : FlapServoEnum::FLAP_NONE,
+                flapState : FlapState::FLAP_OPEN,
+                direction : DirectionEnum::RIGHT
+            });
+        }
+        else if (data.substring(data.indexOf(" ")).indexOf("BS") > -1)
+        {
+            queue.push({
+                servo : PickupServoEnum::SERVO_NONE,
+                pos : 0,
+                flap : FlapServoEnum::FLAP_NONE,
+                flapState : FlapState::FLAP_OPEN,
+                direction : DirectionEnum::BACKWARD
+            });
+        }
+    }
+    else if (data.indexOf("FL") > -1)
+    {
+        FlapServoEnum flapServo = FlapServoEnum::FLAP_NONE;
+        FlapState flapState = FlapState::FLAP_OPEN;
+
+        if (data.indexOf("FT") > -1)
+        {
+            flapServo = FlapServoEnum::FLAP_CENT;
+        }
+        else if (data.indexOf("LT") > -1)
+        {
+            flapServo = FlapServoEnum::FLAP_LEFT;
+            Serial.println("LEFT FLAP");
+        }
+        else if (data.indexOf("RT") > -1)
+        {
+            flapServo = FlapServoEnum::FLAP_RGHT;
+        }
+
+        if (data.indexOf("CLOSE") > -1)
+        {
+            flapState = FlapState::FLAP_CLOSE;
+            Serial.println("FLAP CLOSE");
+        }
+
+        queue.push({
+            servo : PickupServoEnum::SERVO_NONE,
+            pos : 0,
+            flap : flapServo,
+            flapState : flapState,
+            direction : DirectionEnum::NONE
+        });
+    }
+    else if (data.indexOf("FT") > -1)
     {
         int angle = data.substring(data.indexOf(" ")).toInt();
-        queue.push({servo : 'f', pos : angle});
-        // moveServo(&frontServo, angle);
+        queue.push({
+            servo : PickupServoEnum::SERVO_CENT,
+            pos : angle,
+            flap : FlapServoEnum::FLAP_NONE,
+            flapState : FlapState::FLAP_OPEN,
+            direction : DirectionEnum::NONE
+        });
     }
     else if (data.indexOf("LT") > -1)
     {
         int angle = data.substring(data.indexOf(" ")).toInt();
-        queue.push({servo : 'l', pos : angle});
-        // moveServo(&leftServo, angle);
+        queue.push({
+            servo : PickupServoEnum::SERVO_LEFT,
+            pos : angle,
+            flap : FlapServoEnum::FLAP_NONE,
+            flapState : FlapState::FLAP_OPEN,
+            direction : DirectionEnum::NONE
+        });
     }
     else if (data.indexOf("RT") > -1)
     {
         int angle = data.substring(data.indexOf(" ")).toInt();
-        queue.push({servo : 'r', pos : angle});
-        // moveServo(&rightServo, angle);
+        queue.push({
+            servo : PickupServoEnum::SERVO_RGHT,
+            pos : angle,
+            flap : FlapServoEnum::FLAP_NONE,
+            flapState : FlapState::FLAP_OPEN,
+            direction : DirectionEnum::NONE
+        });
     }
     else if (data.indexOf("BS") > -1)
     {
         int angle = data.substring(data.indexOf(" ")).toInt();
-        queue.push({servo : 'b', pos : angle});
-        // moveServo(&baseServo, angle);
+        queue.push({
+            servo : PickupServoEnum::SERVO_BASE,
+            pos : angle,
+            flap : FlapServoEnum::FLAP_NONE,
+            flapState : FlapState::FLAP_OPEN,
+            direction : DirectionEnum::NONE
+        });
     }
 }
 
@@ -67,14 +165,39 @@ void loop()
     {
         Cmd cmd = queue.pop();
 
-        if (cmd.servo == 'f') {
+        if (cmd.servo == PickupServoEnum::SERVO_CENT)
+        {
             moveServo(&frontServo, cmd.pos);
-        } else if (cmd.servo == 'l') {
+        }
+        else if (cmd.servo == PickupServoEnum::SERVO_LEFT)
+        {
             moveServo(&leftServo, cmd.pos);
-        } else if (cmd.servo == 'r') {
+        }
+        else if (cmd.servo == PickupServoEnum::SERVO_RGHT)
+        {
             moveServo(&rightServo, cmd.pos);
-        } else if (cmd.servo == 'b') {
+        }
+        else if (cmd.servo == PickupServoEnum::SERVO_BASE)
+        {
             moveServo(&baseServo, cmd.pos);
+        }
+        else if (cmd.direction != DirectionEnum::NONE)
+        {
+            setupForDrop(cmd.direction, &shouldDropRed);
+        }
+        else if (cmd.flap != FlapServoEnum::FLAP_NONE)
+        {
+            if (cmd.flap == FlapServoEnum::FLAP_LEFT)
+            {
+                if (cmd.flapState == FlapState::FLAP_CLOSE)
+                {
+                    flapLeftServo.close();
+                }
+                else if (cmd.flapState == FlapState::FLAP_OPEN)
+                {
+                    flapLeftServo.open();
+                }
+            }
         }
     }
 }
