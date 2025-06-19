@@ -3,6 +3,7 @@
 #include <Wire.h>
 #include "ServoControl.h"
 #include "ColorSensors.h"
+#include "constants.h"
 
 bool shouldDropRed = true;
 
@@ -16,6 +17,11 @@ typedef struct
 } Cmd;
 
 CircularBuffer<Cmd, 10> queue;
+
+void requestEvent()
+{
+    Wire.write(checkForRed().c_str());
+}
 
 void receiveEvent(int howMany)
 {
@@ -154,9 +160,25 @@ void setup()
 {
     Wire.begin(4); // join i2c bus with address #4
     Wire.onReceive(receiveEvent);
+    Wire.onRequest(requestEvent);  
     Serial.begin(9600);
 
     initServos();
+
+    // flapLeftServo.close();
+    // flapRghtServo.close();
+    // openCentFlap();
+    // flapRghtServo.close();
+
+    // int i = 0;
+    // while (i < 2)
+    // {
+    //     openCentFlap();
+    //     delay(2000);
+    //     closeCentFlap();
+    //     delay(2000);
+    //     i++;
+    // }
 }
 
 void loop()
@@ -167,19 +189,19 @@ void loop()
 
         if (cmd.servo == PickupServoEnum::SERVO_CENT)
         {
-            moveServo(&frontServo, cmd.pos);
+            moveServo(frontServo, cmd.pos);
         }
         else if (cmd.servo == PickupServoEnum::SERVO_LEFT)
         {
-            moveServo(&leftServo, cmd.pos);
+            moveServo(leftServo, cmd.pos);
         }
         else if (cmd.servo == PickupServoEnum::SERVO_RGHT)
         {
-            moveServo(&rightServo, cmd.pos);
+            moveServo(rightServo, cmd.pos);
         }
         else if (cmd.servo == PickupServoEnum::SERVO_BASE)
         {
-            moveServo(&baseServo, cmd.pos);
+            moveServo(baseServo, cmd.pos);
         }
         else if (cmd.direction != DirectionEnum::NONE)
         {
@@ -196,6 +218,28 @@ void loop()
                 else if (cmd.flapState == FlapState::FLAP_OPEN)
                 {
                     flapLeftServo.open();
+                }
+            }
+            else if (cmd.flap == FlapServoEnum::FLAP_CENT)
+            {
+                if (cmd.flapState == FlapState::FLAP_CLOSE)
+                {
+                    closeCentFlap();
+                }
+                else if (cmd.flapState == FlapState::FLAP_OPEN)
+                {
+                    openCentFlap();
+                }
+            }
+            else if (cmd.flap == FlapServoEnum::FLAP_RGHT)
+            {
+                if (cmd.flapState == FlapState::FLAP_CLOSE)
+                {
+                    flapRghtServo.close();
+                }
+                else if (cmd.flapState == FlapState::FLAP_OPEN)
+                {
+                    flapRghtServo.open();
                 }
             }
         }

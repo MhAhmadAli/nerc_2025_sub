@@ -6,6 +6,7 @@
 #include <Arduino.h>
 #include <Servo.h>
 #include "ColorSensors.h"
+#include "constants.h"
 
 #define PIN_SERVO_FRONT 5
 #define PIN_SERVO_LEFT 4
@@ -33,21 +34,6 @@ enum FlapServoEnum
     FLAP_RGHT
 };
 
-enum FlapState
-{
-    FLAP_OPEN,
-    FLAP_CLOSE
-};
-
-enum DirectionEnum
-{
-    NONE,
-    FORWARD,
-    BACKWARD,
-    LEFT,
-    RIGHT
-};
-
 class PickupServo : public Servo
 {
 public:
@@ -70,9 +56,10 @@ public:
 
 class FlapServos : public PickupServo
 {
-    private:
+private:
     uint8_t pinServo1;
     uint8_t pinServo2;
+
 public:
     PickupServo flapServo1;
     PickupServo flapServo2;
@@ -83,19 +70,22 @@ public:
         pinServo2 = _pinServo2;
     }
 
-    void init() {
-        flapServo1.init(pinServo1, 90);
-        flapServo2.init(pinServo2, 0);
+    void init(int pos1 = 90, int pos2 = 0)
+    {
+        flapServo1.init(pinServo1, pos1);
+        flapServo2.init(pinServo2, pos2);
     }
 
-    void open() {
-        flapServo1.write(90);
-        flapServo2.write(0);
+    void open(int pos1 = 90, int pos2 = 0)
+    {
+        flapServo1.write(pos1);
+        flapServo2.write(pos2);
     }
 
-    void close() {
-        flapServo1.write(0);
-        flapServo2.write(90);
+    void close(int pos1 = 0, int pos2 = 90)
+    {
+        flapServo1.write(pos1);
+        flapServo2.write(pos2);
     }
 };
 
@@ -105,6 +95,21 @@ PickupServo rightServo;
 PickupServo baseServo;
 
 FlapServos flapLeftServo(6, 7);
+FlapServos flapRghtServo(8, 11);
+// FlapServos flapCentServo(13, 12);
+
+Servo flapCentServo1;
+Servo flapCentServo2;
+
+void openCentFlap(int pos1 = 90, int pos2 =  0){
+    flapCentServo1.write(pos1);
+    flapCentServo2.write(pos2);
+}
+
+void closeCentFlap(int pos1 = 0, int pos2 =  90){
+    flapCentServo1.write(pos1);
+    flapCentServo2.write(pos2);
+}
 
 void initServos()
 {
@@ -115,57 +120,73 @@ void initServos()
     baseServo.init(PIN_SERVO_BASE, POS_SERVO_BASE_000);
 
     flapLeftServo.init();
+    flapRghtServo.init();
+    // flapCentServo.init();
+
+    flapCentServo1.attach(12);
+    flapCentServo2.attach(13);
+
+    closeCentFlap();
+    flapLeftServo.close();
+    flapRghtServo.close();
+
+    frontServo.write(70);
+    leftServo.write(70);
+    rightServo.write(70);
+
+    openCentFlap();
+    flapLeftServo.open();
+    flapRghtServo.open();
 }
 
-void moveServo(PickupServo *servoMotor, int pos)
+void moveServo(PickupServo &servoMotor, int pos)
 {
-    noInterrupts();
-    if (servoMotor->lastPos > pos)
+    if (servoMotor.lastPos > pos)
     {
-        for (int i = servoMotor->lastPos; i > pos; i--)
+        for (int i = servoMotor.lastPos; i > pos; i--)
         {
-            servoMotor->write(i);
-            delay(30);
+            servoMotor.write(i);
+
+            delay(10);
         }
     }
     else
     {
-        for (int i = servoMotor->lastPos; i < pos; i++)
+        for (int i = servoMotor.lastPos; i < pos; i++)
         {
-            servoMotor->write(i);
-            delay(30);
+            servoMotor.write(i);
+            delay(10);
         }
     }
-    servoMotor->lastPos = pos;
-    interrupts();
+    servoMotor.lastPos = pos;
 }
 
 void moveBaseServoToDropDirection(DirectionEnum directionToGo, PickupServoEnum servoToFocus)
 {
     if (servoToFocus == PickupServoEnum::SERVO_CENT)
     {
-        moveServo(&baseServo, POS_SERVO_BASE_090);
+        moveServo(baseServo, POS_SERVO_BASE_090);
     }
     else if (servoToFocus == PickupServoEnum::SERVO_LEFT)
     {
         if (directionToGo == DirectionEnum::FORWARD)
         {
-            moveServo(&baseServo, POS_SERVO_BASE_000);
+            moveServo(baseServo, POS_SERVO_BASE_000);
         }
         else if (directionToGo == DirectionEnum::BACKWARD)
         {
-            moveServo(&baseServo, POS_SERVO_BASE_180);
+            moveServo(baseServo, POS_SERVO_BASE_180);
         }
     }
     else if (servoToFocus == PickupServoEnum::SERVO_RGHT)
     {
         if (directionToGo == DirectionEnum::FORWARD)
         {
-            moveServo(&baseServo, POS_SERVO_BASE_180);
+            moveServo(baseServo, POS_SERVO_BASE_180);
         }
         else if (directionToGo == DirectionEnum::BACKWARD)
         {
-            moveServo(&baseServo, POS_SERVO_BASE_000);
+            moveServo(baseServo, POS_SERVO_BASE_000);
         }
     }
 }
