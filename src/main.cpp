@@ -3,7 +3,6 @@
 #include <Wire.h>
 #include "ServoControl.h"
 #include "ColorSensors.h"
-#include "constants.h"
 
 bool shouldDropRed = true;
 
@@ -13,7 +12,6 @@ typedef struct
     int pos;
     FlapServoEnum flap;
     FlapState flapState;
-    DirectionEnum direction;
 } Cmd;
 
 CircularBuffer<Cmd, 10> queue;
@@ -42,8 +40,7 @@ void receiveEvent(int howMany)
                 servo : PickupServoEnum::SERVO_NONE,
                 pos : 0,
                 flap : FlapServoEnum::FLAP_NONE,
-                flapState : FlapState::FLAP_OPEN,
-                direction : DirectionEnum::FORWARD
+                flapState : FlapState::FLAP_OPEN
             });
         }
         else if (data.substring(data.indexOf(" ")).indexOf("LT") > -1)
@@ -52,8 +49,7 @@ void receiveEvent(int howMany)
                 servo : PickupServoEnum::SERVO_NONE,
                 pos : 0,
                 flap : FlapServoEnum::FLAP_NONE,
-                flapState : FlapState::FLAP_OPEN,
-                direction : DirectionEnum::LEFT
+                flapState : FlapState::FLAP_OPEN
             });
         }
         else if (data.substring(data.indexOf(" ")).indexOf("RT") > -1)
@@ -62,8 +58,7 @@ void receiveEvent(int howMany)
                 servo : PickupServoEnum::SERVO_NONE,
                 pos : 0,
                 flap : FlapServoEnum::FLAP_NONE,
-                flapState : FlapState::FLAP_OPEN,
-                direction : DirectionEnum::RIGHT
+                flapState : FlapState::FLAP_OPEN
             });
         }
         else if (data.substring(data.indexOf(" ")).indexOf("BS") > -1)
@@ -72,8 +67,7 @@ void receiveEvent(int howMany)
                 servo : PickupServoEnum::SERVO_NONE,
                 pos : 0,
                 flap : FlapServoEnum::FLAP_NONE,
-                flapState : FlapState::FLAP_OPEN,
-                direction : DirectionEnum::BACKWARD
+                flapState : FlapState::FLAP_OPEN
             });
         }
     }
@@ -106,8 +100,7 @@ void receiveEvent(int howMany)
             servo : PickupServoEnum::SERVO_NONE,
             pos : 0,
             flap : flapServo,
-            flapState : flapState,
-            direction : DirectionEnum::NONE
+            flapState : flapState
         });
     }
     else if (data.indexOf("FT") > -1)
@@ -117,8 +110,7 @@ void receiveEvent(int howMany)
             servo : PickupServoEnum::SERVO_CENT,
             pos : angle,
             flap : FlapServoEnum::FLAP_NONE,
-            flapState : FlapState::FLAP_OPEN,
-            direction : DirectionEnum::NONE
+            flapState : FlapState::FLAP_OPEN
         });
     }
     else if (data.indexOf("LT") > -1)
@@ -128,8 +120,7 @@ void receiveEvent(int howMany)
             servo : PickupServoEnum::SERVO_LEFT,
             pos : angle,
             flap : FlapServoEnum::FLAP_NONE,
-            flapState : FlapState::FLAP_OPEN,
-            direction : DirectionEnum::NONE
+            flapState : FlapState::FLAP_OPEN
         });
     }
     else if (data.indexOf("RT") > -1)
@@ -139,8 +130,7 @@ void receiveEvent(int howMany)
             servo : PickupServoEnum::SERVO_RGHT,
             pos : angle,
             flap : FlapServoEnum::FLAP_NONE,
-            flapState : FlapState::FLAP_OPEN,
-            direction : DirectionEnum::NONE
+            flapState : FlapState::FLAP_OPEN
         });
     }
     else if (data.indexOf("BS") > -1)
@@ -150,8 +140,7 @@ void receiveEvent(int howMany)
             servo : PickupServoEnum::SERVO_BASE,
             pos : angle,
             flap : FlapServoEnum::FLAP_NONE,
-            flapState : FlapState::FLAP_OPEN,
-            direction : DirectionEnum::NONE
+            flapState : FlapState::FLAP_OPEN
         });
     }
 }
@@ -164,21 +153,6 @@ void setup()
     Serial.begin(9600);
 
     initServos();
-
-    // flapLeftServo.close();
-    // flapRghtServo.close();
-    // openCentFlap();
-    // flapRghtServo.close();
-
-    // int i = 0;
-    // while (i < 2)
-    // {
-    //     openCentFlap();
-    //     delay(2000);
-    //     closeCentFlap();
-    //     delay(2000);
-    //     i++;
-    // }
 }
 
 void loop()
@@ -202,10 +176,6 @@ void loop()
         else if (cmd.servo == PickupServoEnum::SERVO_BASE)
         {
             moveServo(baseServo, cmd.pos);
-        }
-        else if (cmd.direction != DirectionEnum::NONE)
-        {
-            setupForDrop(cmd.direction, &shouldDropRed);
         }
         else if (cmd.flap != FlapServoEnum::FLAP_NONE)
         {

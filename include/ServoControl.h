@@ -6,7 +6,6 @@
 #include <Arduino.h>
 #include <Servo.h>
 #include "ColorSensors.h"
-#include "constants.h"
 
 #define PIN_SERVO_FRONT 5
 #define PIN_SERVO_LEFT 4
@@ -16,6 +15,8 @@
 #define POS_SERVO_BASE_000 10  // LEFT AT FRONT, CENTER AT RIGHT, RIGHT AT BACK
 #define POS_SERVO_BASE_090 70  // LEFT AT LEFT, CENTER AT FRONT, RIGHT AT RIGHT
 #define POS_SERVO_BASE_180 135 // LEFT AT BACK, CENTER AT LEFT, RIGHT AT FRONT
+
+// TODO: Remove classes and write simple code as there were memory issues.
 
 enum PickupServoEnum
 {
@@ -32,6 +33,12 @@ enum FlapServoEnum
     FLAP_LEFT,
     FLAP_CENT,
     FLAP_RGHT
+};
+
+enum FlapState
+{
+    FLAP_OPEN,
+    FLAP_CLOSE
 };
 
 class PickupServo : public Servo
@@ -101,12 +108,14 @@ FlapServos flapRghtServo(8, 11);
 Servo flapCentServo1;
 Servo flapCentServo2;
 
-void openCentFlap(int pos1 = 90, int pos2 =  0){
+void openCentFlap(int pos1 = 90, int pos2 = 0)
+{
     flapCentServo1.write(pos1);
     flapCentServo2.write(pos2);
 }
 
-void closeCentFlap(int pos1 = 0, int pos2 =  90){
+void closeCentFlap(int pos1 = 0, int pos2 = 90)
+{
     flapCentServo1.write(pos1);
     flapCentServo2.write(pos2);
 }
@@ -159,56 +168,6 @@ void moveServo(PickupServo &servoMotor, int pos)
         }
     }
     servoMotor.lastPos = pos;
-}
-
-void moveBaseServoToDropDirection(DirectionEnum directionToGo, PickupServoEnum servoToFocus)
-{
-    if (servoToFocus == PickupServoEnum::SERVO_CENT)
-    {
-        moveServo(baseServo, POS_SERVO_BASE_090);
-    }
-    else if (servoToFocus == PickupServoEnum::SERVO_LEFT)
-    {
-        if (directionToGo == DirectionEnum::FORWARD)
-        {
-            moveServo(baseServo, POS_SERVO_BASE_000);
-        }
-        else if (directionToGo == DirectionEnum::BACKWARD)
-        {
-            moveServo(baseServo, POS_SERVO_BASE_180);
-        }
-    }
-    else if (servoToFocus == PickupServoEnum::SERVO_RGHT)
-    {
-        if (directionToGo == DirectionEnum::FORWARD)
-        {
-            moveServo(baseServo, POS_SERVO_BASE_180);
-        }
-        else if (directionToGo == DirectionEnum::BACKWARD)
-        {
-            moveServo(baseServo, POS_SERVO_BASE_000);
-        }
-    }
-}
-
-void setupForDrop(DirectionEnum directionToGo, bool *shouldDropRed)
-{
-    if (shouldDropRed)
-    {
-        if (isRed(COLOR_CENT_SENSOR))
-        {
-            moveBaseServoToDropDirection(directionToGo, PickupServoEnum::SERVO_CENT);
-        }
-        else if (isRed(COLOR_LEFT_SENSOR))
-        {
-            moveBaseServoToDropDirection(directionToGo, PickupServoEnum::SERVO_LEFT);
-        }
-        else
-        {
-            moveBaseServoToDropDirection(directionToGo, PickupServoEnum::SERVO_RGHT);
-        }
-        *shouldDropRed = false;
-    }
 }
 
 #endif //_SERVOCONTROL_H_
